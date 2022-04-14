@@ -1,6 +1,6 @@
 package com.sya.kafka.watermarks;
 
-import dto.WInData;
+import com.sya.dto.WInData;
 import org.apache.flink.api.common.eventtime.Watermark;
 import org.apache.flink.api.common.eventtime.WatermarkGenerator;
 import org.apache.flink.api.common.eventtime.WatermarkOutput;

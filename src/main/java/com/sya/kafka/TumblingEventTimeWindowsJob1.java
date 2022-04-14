@@ -1,7 +1,7 @@
 package com.sya.kafka;
 
 import com.sya.kafka.source.SourceBuilder;
-import dto.WInData;
+import com.sya.dto.WInData;
 import org.apache.flink.api.common.eventtime.*;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;

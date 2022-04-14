@@ -1,7 +1,7 @@
 package com.sya.kafka;
 
-import dto.SNStatusDto;
-import dto.SnAlaram;
+import com.sya.dto.SNStatusDto;
+import com.sya.dto.SnAlaram;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;

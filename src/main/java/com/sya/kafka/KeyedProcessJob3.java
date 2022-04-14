@@ -1,9 +1,8 @@
 package com.sya.kafka;
 
-import dto.SNDisconnectedDto;
-import dto.SNStatusDto;
-import dto.SnAlaram;
-import dto.WInData;
+import com.sya.dto.SNDisconnectedDto;
+import com.sya.dto.SNStatusDto;
+import com.sya.dto.SnAlaram;
 import org.apache.flink.api.common.eventtime.*;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RuntimeContext;
@@ -22,7 +21,6 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 

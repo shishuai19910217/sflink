@@ -1,16 +1,9 @@
 package com.sya.kafka;
 
-import com.alibaba.fastjson.JSONObject;
-import com.sya.kafka.source.SourceBuilder;
-import dto.ClockDto;
-import dto.SNStatusDto;
-import dto.SnAlaram;
-import dto.WInData;
+import com.sya.dto.SNStatusDto;
+import com.sya.dto.SnAlaram;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.state.*;
-import org.apache.flink.api.common.typeinfo.TypeHint;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.state.FunctionInitializationContext;
@@ -24,9 +17,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class KeyedProcessJobWithProcessTime {
     public static void main(String[] args) throws Exception {

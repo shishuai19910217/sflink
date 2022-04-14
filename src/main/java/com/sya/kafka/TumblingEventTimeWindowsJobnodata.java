@@ -1,7 +1,7 @@
 package com.sya.kafka;
 
 import com.sya.kafka.source.SourceBuilder;
-import dto.SNStatusDto;
+import com.sya.dto.SNStatusDto;
 import org.apache.flink.api.common.eventtime.*;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.functions.KeySelector;

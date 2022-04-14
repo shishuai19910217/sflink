@@ -16,8 +16,10 @@ public class FastjsonKeyValueDeserializationSchema implements KafkaDeserializati
     public JSONObject deserialize(ConsumerRecord<byte[], byte[]> consumerRecord) throws Exception {
         byte[] value = consumerRecord.value();
         String msg = new String(value, "utf-8");
-
-        return JSONObject.parseObject(msg);
+        JSONObject kafkaObj = JSONObject.parseObject(msg);
+        JSONObject deviceDataPointDto = kafkaObj.getJSONObject("deviceDataPointDto");
+        JSONObject parsedDataPointMessages = deviceDataPointDto.getJSONObject("parsedDataPointMessages");
+        return parsedDataPointMessages;
     }
 
     @Override

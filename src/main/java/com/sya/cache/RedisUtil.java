@@ -1,8 +1,13 @@
 package com.sya.cache;
 
 import com.alibaba.fastjson.JSONObject;
+import com.sya.config.MybatisConfig;
+import com.sya.constants.RuleCacheConstant;
 import com.sya.kafka.datapointalarm.AlarmRuleDto;
 import com.sya.kafka.datapointalarm.AlarmRuleMonitorElementDto;
+import com.sya.kafka.datapointalarm.rule.dto.DevicePointRelDto;
+import com.sya.mapper.DeviceTemplatePointRelMapper;
+import com.sya.utils.CommonUtil;
 import io.lettuce.core.KeyValue;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
@@ -13,21 +18,19 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class RedisUtil {
-    private static final GenericObjectPool<StatefulRedisConnection<String, String>> pool;
+    public static final GenericObjectPool<StatefulRedisConnection<String, String>> pool;
 
     static {
 
         RedisURI redisUri = RedisURI.Builder.
-                redis("139.196.142.241",6379)
+                redis("127.0.0.1",6379)
                 .withDatabase(2).build();
-        redisUri.setPassword("nuojiehongkao2022".toCharArray());
+      //  redisUri.setPassword("nuojiehongkao2022".toCharArray());
         GenericObjectPoolConfig<StatefulRedisConnection<String, String>> poolConfig = new GenericObjectPoolConfig();
         RedisClient client = RedisClient.create(redisUri);
         pool = ConnectionPoolSupport.createGenericObjectPool(() -> {
@@ -36,6 +39,7 @@ public class RedisUtil {
 
 
     }
+
 
     public static void setStr (String key,String val){
         StatefulRedisConnection<String, String> redisConnection = null;
@@ -187,17 +191,36 @@ public class RedisUtil {
         return null;
     }
 
+    /***
+     * 获取 变量报警规则
+     */
+    public static String getStr(String key ){
+        StatefulRedisConnection<String, String> redisConnection = null;
+        try {
+            redisConnection = pool.borrowObject();
+            RedisCommands<String, String> sync = redisConnection.sync();
+            String data = sync.get(key);
+            return data;
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (null != redisConnection) {
+                pool.returnObject(redisConnection);
+            }
+        }
+        return null;
+    }
     /***
      * 是否存在上次报警
      */
-    public static Boolean existsLastAlarmStatus(String uniqueDataPointId,String ruleId ){
+    public static Boolean existsLastAlarmStatus(String ruleId,String uniqueDataPointId ){
         StatefulRedisConnection<String, String> redisConnection = null;
         try {
             redisConnection = pool.borrowObject();
             RedisCommands<String, String> sync = redisConnection.sync();
 
-            return sync.hexists("lastdatapointalarmstatus_"+uniqueDataPointId, ruleId);
+            return sync.hexists(RuleCacheConstant.LAST_DATAPOINTALARMDATA_PREFIX+ruleId, uniqueDataPointId);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -212,13 +235,13 @@ public class RedisUtil {
     /***
      * 保存最新的报警状态
      */
-    public static Boolean setLastAlarmStatus(String uniqueDataPointId,String ruleId,String data ){
+    public static Boolean setLastAlarmStatus(String ruleId,String uniqueDataPointId,String data ){
         StatefulRedisConnection<String, String> redisConnection = null;
         try {
             redisConnection = pool.borrowObject();
             RedisCommands<String, String> sync = redisConnection.sync();
 
-            return sync.hset("lastdatapointalarmstatus_"+uniqueDataPointId, ruleId,data);
+            return sync.hset(RuleCacheConstant.LAST_DATAPOINTALARMDATA_PREFIX+ruleId, uniqueDataPointId,data);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -233,13 +256,13 @@ public class RedisUtil {
     /***
      *  删除最新的报警状态
      */
-    public static void delLastAlarmStatus(String uniqueDataPointId,String ruleId ){
+    public static void delLastAlarmStatus(String ruleId,String uniqueDataPointId){
         StatefulRedisConnection<String, String> redisConnection = null;
         try {
             redisConnection = pool.borrowObject();
             RedisCommands<String, String> sync = redisConnection.sync();
 
-            sync.hdel("lastdatapointalarmstatus_"+uniqueDataPointId, ruleId);
+            sync.hdel(RuleCacheConstant.LAST_DATAPOINTALARMDATA_PREFIX+ruleId, uniqueDataPointId);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -259,7 +282,7 @@ public class RedisUtil {
             redisConnection = pool.borrowObject();
             RedisCommands<String, String> sync = redisConnection.sync();
 
-            return sync.hexists("datapointalarmpushsttus_"+ruleId,uniqueDataPointId );
+            return sync.hexists(RuleCacheConstant.DATAPOINTALARMPUSH_PREFIX+ruleId,uniqueDataPointId );
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -273,13 +296,13 @@ public class RedisUtil {
     /***
      * 某个规则是不是推送过了
      */
-    public static void setDatapointAlaramPushStatus(String ruleId,String uniqueDataPointId ){
+    public static void setDatapointAlaramPushStatus(String ruleId,String uniqueDataPointId  ){
         StatefulRedisConnection<String, String> redisConnection = null;
         try {
             redisConnection = pool.borrowObject();
             RedisCommands<String, String> sync = redisConnection.sync();
 
-            sync.hset("datapointalarmpushsttus_"+ruleId,uniqueDataPointId,"1" );
+            sync.hset(RuleCacheConstant.DATAPOINTALARMPUSH_PREFIX+ruleId,uniqueDataPointId,"1" );
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -299,7 +322,7 @@ public class RedisUtil {
             redisConnection = pool.borrowObject();
             RedisCommands<String, String> sync = redisConnection.sync();
 
-            sync.hdel("datapointalarmpushsttus_"+ruleId,uniqueDataPointId);
+            sync.hdel(RuleCacheConstant.DATAPOINTALARMPUSH_PREFIX+ruleId,uniqueDataPointId);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -315,50 +338,165 @@ public class RedisUtil {
 
     public static void main(String[] args) {
 
-//       Map<String,Object> map = new HashMap<>(16);
-//       map.put("id",1);
-//        map.put("alarmRuleName","报警规则");
-//        map.put("monitorObj","0");
-//        map.put("triggerCondition","2");
-//        map.put("triggerConditionAVal","20");
-//        map.put("triggerConditionBVal","20");
-//        map.put("triggerConditionValType","0");
-//        map.put("alarmMsg","我报警了");
-//        map.put("alarmDeadZone","0");
-//        map.put("delayTime","10");
-//        map.put("pushStatus","1");
-//        map.put("pushFrequency","1");
-//        map.put("pushInterval",10);
-//        // device_id sn unique_data_point_id template_id data_point_id
-//        map.put("monitorElement","10-sn123-1-null-null#10-sn123-2-null-null");
-//
-//
-//        Map<String,Object> map1 = new HashMap<>(16);
-//        map1.put("id",2);
-//        map1.put("alarmRuleName","报警规则2");
-//        map1.put("monitorObj","0");
-//        map1.put("triggerCondition","2");
-//        map1.put("triggerConditionAVal","20");
-//        map1.put("triggerConditionBVal","20");
-//        map1.put("triggerConditionValType","0");
-//        map1.put("alarmMsg","我报警了2");
-//        map1.put("alarmDeadZone","0");
-//        map1.put("delayTime","10");
-//        map1.put("pushStatus","1");
-//        map1.put("pushFrequency","1");
-//        map1.put("push_interval",10);
-//        // device_id sn unique_data_point_id template_id data_point_id
-//        map1.put("monitorElement","10-sn123-1-null-null#10-sn123-2-null-null");
-//
-//
-//        Map<String,Object> adMap = new HashMap<>(16);
-//
-//        RedisUtil.setStr("a_"+1, JSONObject.toJSONString(map));
-//        RedisUtil.setStr("a_"+2,JSONObject.toJSONString(map1));
-//
-//        RedisUtil.setHash("ad_"+"sn123","1","1,2");
-//        RedisUtil.setHash("ad_"+"sn123","2","1,2");
-        System.out.printf( RedisUtil.getAlarmRuleData("1").toString());
+       Map<String,Object> map = new HashMap<>(16);
+       map.put("id",1);
+        map.put("alarmRuleName","报警规则");
+        map.put("monitorObj","0");
+        map.put("triggerCondition","2");
+        map.put("triggerConditionAVal","20");
+        map.put("triggerConditionBVal","20");
+        map.put("triggerConditionValType","0");
+        map.put("alarmMsg","我报警了");
+        map.put("alarmDeadZone","0");
+        map.put("delayTime","10");
+        map.put("pushStatus","1");
+        map.put("pushFrequency","1");
+        map.put("pushInterval",10);
+        // device_id sn unique_data_point_id template_id data_point_id
+        map.put("monitorElement","10-sn123-1-null-null#10-sn123-2-null-null");
 
+
+        Map<String,Object> map1 = new HashMap<>(16);
+        map1.put("id",2);
+        map1.put("alarmRuleName","报警规则2");
+        map1.put("monitorObj","0");
+        map1.put("triggerCondition","2");
+        map1.put("triggerConditionAVal","20");
+        map1.put("triggerConditionBVal","20");
+        map1.put("triggerConditionValType","0");
+        map1.put("alarmMsg","我报警了2");
+        map1.put("alarmDeadZone","0");
+        map1.put("delayTime","10");
+        map1.put("pushStatus","1");
+        map1.put("pushFrequency","1");
+        map1.put("push_interval",10);
+        // device_id sn unique_data_point_id template_id data_point_id
+        map1.put("monitorElement","10-sn123-1-null-null#10-sn123-2-null-null");
+
+
+        Map<String,Object> adMap = new HashMap<>(16);
+
+        RedisUtil.setStr("a_"+1, JSONObject.toJSONString(map));
+        RedisUtil.setStr("a_"+2,JSONObject.toJSONString(map1));
+
+        RedisUtil.setHash("ad_"+"sn123","1","1,2");
+        RedisUtil.setHash("ad_"+"sn123","2","1,2");
+
+    }
+
+    public static void setUniqueDataPointRuleMapper(String sn ,String uniqueDataPointId, String ruleIds) {
+        String ruleUniquedatapointCachePrefix = RuleCacheConstant.RULE_UNIQUEDATAPOINT_CACHE_PREFIX;
+        RedisUtil.setHash(ruleUniquedatapointCachePrefix+sn,ruleUniquedatapointCachePrefix+uniqueDataPointId,ruleIds);
+    }
+
+    public static void setUniqueDataPointRuleMapper(String uniqueDataPointId, String ruleIds) {
+        String ruleUniquedatapointCachePrefix = RuleCacheConstant.RULE_UNIQUEDATAPOINT_CACHE_PREFIX;
+        RedisUtil.setStr(ruleUniquedatapointCachePrefix+uniqueDataPointId,ruleIds);
+    }
+
+    public static String getUniqueDataPointRuleMapper(String uniqueDataPointId) {
+        String ruleUniquedatapointCachePrefix = RuleCacheConstant.RULE_UNIQUEDATAPOINT_CACHE_PREFIX;
+        return RedisUtil.getStr(ruleUniquedatapointCachePrefix+uniqueDataPointId);
+    }
+
+    public static String getDataPointRuleMapper(String dataPointId) {
+        String ruleUniquedatapointCachePrefix = RuleCacheConstant.RULE_DATAPOINT_CACHE_PREFIX;
+        return RedisUtil.getStr(ruleUniquedatapointCachePrefix+dataPointId);
+    }
+
+
+    public static void aa(){
+        StatefulRedisConnection<String, String> redisConnection = null;
+        try {
+            redisConnection = pool.borrowObject();
+            RedisCommands<String, String> sync = redisConnection.sync();
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (null != redisConnection) {
+                pool.returnObject(redisConnection);
+            }
+        }
+    }
+
+    public static void setDevicePointRel(Map<String, List<DevicePointRelDto>> map) {
+        Set<String> sns = map.keySet();
+        StatefulRedisConnection<String, String> redisConnection = null;
+        try {
+            redisConnection = pool.borrowObject();
+            RedisCommands<String, String> sync = redisConnection.sync();
+            for (String sn : sns) {
+                List<DevicePointRelDto> devicePointRelDtos = map.get(sn);
+                Map<String, String> collect = devicePointRelDtos.stream().collect(Collectors.toMap(key -> {
+                    return key.getDeviceTemplatePointId().toString();
+                }, val -> {
+                    return val.getId().toString();
+                }));
+                sync.hset(RuleCacheConstant.DEVICE_DATAPOINT_PREFIX+sn,collect);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (null != redisConnection) {
+                pool.returnObject(redisConnection);
+            }
+        }
+    }
+
+    public static void delDevicePointRel(List<String> snList) {
+        StatefulRedisConnection<String, String> redisConnection = null;
+        try {
+            redisConnection = pool.borrowObject();
+            RedisCommands<String, String> sync = redisConnection.sync();
+            String[] tmp = new String[snList.size()];
+
+            for (int i = 0; i < snList.size(); i++) {
+                tmp[i] = RuleCacheConstant.DEVICE_DATAPOINT_PREFIX+snList.get(i);
+            }
+            sync.del(tmp);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (null != redisConnection) {
+                pool.returnObject(redisConnection);
+            }
+        }
+    }
+
+    public static String getDevicePointRel(String sn, String dataPointId) {
+        StatefulRedisConnection<String, String> redisConnection = null;
+        try {
+            redisConnection = pool.borrowObject();
+            RedisCommands<String, String> sync = redisConnection.sync();
+            String uniqueDataPointId = sync.hget(RuleCacheConstant.DEVICE_DATAPOINT_PREFIX + sn, dataPointId);
+            if (CommonUtil.judgeEmpty(uniqueDataPointId)) {
+                List<DevicePointRelDto> listBySn = MybatisConfig.getMapper(DeviceTemplatePointRelMapper.class).getListBySn(sn);
+                Map<String, String> collect = listBySn.stream().collect(Collectors.toMap(key -> {
+                    return key.getDeviceTemplatePointId().toString();
+                }, val -> {
+                    return val.getId().toString();
+                }));
+                sync.hset(RuleCacheConstant.DEVICE_DATAPOINT_PREFIX+sn,collect);
+                for (DevicePointRelDto devicePointRelDto : listBySn) {
+                    if (devicePointRelDto.getDeviceTemplatePointId().toString().equals(dataPointId)){
+                        uniqueDataPointId = devicePointRelDto.getId().toString();
+                        break;
+                    }
+                }
+            }
+            return uniqueDataPointId;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            if (null != redisConnection) {
+                pool.returnObject(redisConnection);
+            }
+        }
+        return null;
     }
 }

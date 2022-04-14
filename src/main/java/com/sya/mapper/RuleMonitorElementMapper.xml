@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sya.mapper.RuleMonitorElementMapper">
+    <select id="getList"  resultType="com.sya.dto.RuleMonitorElement">
+        SELECT
+            t.id,
+            data_point_id AS dataPointId,
+            t.device_id AS deviceId,
+            t.element_type AS elementType,
+            t.opera_data_point_id AS operaDataPointId,
+            t.rule_id AS ruleId,
+            t.sn,
+            t.template_id AS templateId ,
+            t.unique_data_point_id as uniqueDataPointId
+        FROM
+            rule_monitor_element t
+        where
+            t.unique_data_point_id in
+        <foreach collection="uniqueDataPointIds" separator="," open="(" close=")" item="id" >
+            #{id}
+        </foreach>
+    </select>
+</mapper>

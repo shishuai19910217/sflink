@@ -1,8 +1,8 @@
 package com.sya.kafka;
 
-import dto.SNDisconnectedDto;
-import dto.SNStatusDto;
-import dto.SnAlaram;
+import com.sya.dto.SNDisconnectedDto;
+import com.sya.dto.SNStatusDto;
+import com.sya.dto.SnAlaram;
 import org.apache.flink.api.common.eventtime.*;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RuntimeContext;

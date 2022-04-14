@@ -1,9 +1,9 @@
 package com.sya.kafka;
 
 import com.sya.kafka.source.SourceBuilder;
-import dto.ClockDto;
-import dto.SNStatusDto;
-import dto.SnAlaram;
+import com.sya.dto.ClockDto;
+import com.sya.dto.SNStatusDto;
+import com.sya.dto.SnAlaram;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;

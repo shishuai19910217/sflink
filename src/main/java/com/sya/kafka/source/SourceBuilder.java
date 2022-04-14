@@ -8,6 +8,7 @@ import org.apache.flink.streaming.util.serialization.JSONKeyValueDeserialization
 
 import java.util.Properties;
 
+
 public class SourceBuilder {
 
     public FlinkKafkaConsumer getKafkaSource(){

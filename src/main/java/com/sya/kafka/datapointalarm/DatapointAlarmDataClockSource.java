@@ -1,6 +1,6 @@
 package com.sya.kafka.datapointalarm;
 
-import dto.ClockDto;
+import com.sya.dto.ClockDto;
 import org.apache.flink.streaming.api.functions.source.RichParallelSourceFunction;
 
 import java.util.ArrayList;

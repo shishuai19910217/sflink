@@ -1,8 +1,7 @@
 package com.sya.kafka;
 
 import com.sya.kafka.source.SourceBuilder;
-import com.sya.kafka.watermarks.BoundedOutOfOrdernessGenerator12;
-import dto.WInData;
+import com.sya.dto.WInData;
 import java.time.Duration;
 
 import org.apache.flink.api.common.eventtime.*;

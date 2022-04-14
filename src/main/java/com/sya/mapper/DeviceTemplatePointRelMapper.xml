@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sya.mapper.DeviceTemplatePointRelMapper">
+
+    <select id="getList" resultType="com.sya.kafka.datapointalarm.rule.dto.DevicePointRelDto">
+        select id as id ,device_no as sn ,device_template_point_id as deviceTemplatePointId
+        from device_template_point_rel where
+            device_no in
+        <foreach collection="sns" separator="," open="(" close=")" item="sn"  >
+            #{sn}
+        </foreach>
+    </select>
+
+    <select id="getListBySn" resultType="com.sya.kafka.datapointalarm.rule.dto.DevicePointRelDto">
+        select id as id ,device_no as sn ,device_template_point_id as deviceTemplatePointId
+        from device_template_point_rel where
+        device_no = #{sn}
+    </select>
+
+</mapper>

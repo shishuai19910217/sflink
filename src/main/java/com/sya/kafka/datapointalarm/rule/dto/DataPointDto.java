@@ -1,0 +1,44 @@
+package com.sya.kafka.datapointalarm.rule.dto;
+
+import com.sya.dto.RuleBaseDto;
+import lombok.Data;
+
+import java.io.Serializable;
+
+@Data
+public class DataPointDto implements Serializable {
+    private String sn;
+    private Integer datapointId;
+    private Integer uniqueDataPointId;
+    private Integer templateId;
+    private String val;
+
+    private String ruleIds;
+    private String ruleId;
+    private RuleBaseDto ruleBaseDto;
+    // 报警信息
+    private String msg;
+    // 规则中的设备id
+    private Integer ruleMachineId;
+    private Integer err;
+    private Long timeMs;
+
+    private String uuid;
+    /***
+     * 是否是恢复流
+     */
+    private Boolean recover = false;
+    /***
+     * 是否需要真正的最终入库
+     */
+    private Boolean storage = true;
+    public DataPointDto(){}
+    public DataPointDto(String sn, Integer datapointId, Integer uniqueDataPointId, Integer templateId, String val) {
+        this.sn = sn;
+        this.datapointId = datapointId;
+        this.uniqueDataPointId = uniqueDataPointId;
+        this.templateId = templateId;
+        this.val = val;
+    }
+
+}

@@ -15,6 +15,7 @@ public class DataPointDto implements Serializable {
     private String alarmRuleIdFormonitorTemlate;
     private String ruleId;
     private String msg;
+    private Integer deviceId;
     /***
      * 是否是恢复流
      */
