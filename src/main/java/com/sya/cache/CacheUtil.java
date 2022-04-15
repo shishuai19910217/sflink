@@ -61,7 +61,10 @@ public class CacheUtil implements Serializable {
         keys.toArray(tmp);
         channel.evict("default",tmp);
     }
+    public static void del(String key) {
 
+        channel.evict("default",key);
+    }
 
     @Data
     static class Dto implements Serializable{

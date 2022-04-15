@@ -1,11 +1,8 @@
 package com.sya.config;
 
 import com.alibaba.fastjson.JSONObject;
-import com.sya.dto.MachineDeviceRel;
 import com.sya.mapper.MachineDeviceRelMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.logging.log4j.Log4jImpl;
-import org.apache.ibatis.logging.log4j2.Log4j2Impl;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSession;

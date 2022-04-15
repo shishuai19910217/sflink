@@ -1,6 +1,8 @@
 package com.sya.mapper;
-import com.sya.dto.MachineDeviceRel;
+import com.sya.kafka.datapointalarm.rule.dto.MachineDeviceRelDto;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * <p>
@@ -11,5 +13,7 @@ import org.apache.ibatis.annotations.Param;
  * @since 2021-11-15
  */
 public interface MachineDeviceRelMapper {
-    public  MachineDeviceRel getList(@Param("id") Integer id  );
+    public List<MachineDeviceRelDto> getList(@Param("sns") List<String> sns  );
+
+
 }

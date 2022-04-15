@@ -1,6 +1,7 @@
 package com.sya.kafka.datapointalarm.rule.process;
 
 import com.alibaba.fastjson.JSONObject;
+import com.sya.cache.DeviceCacheUtil;
 import com.sya.cache.RuleCacheUtil;
 import com.sya.config.PropertiesUnit;
 import com.sya.dto.RuleAction;
@@ -12,19 +13,19 @@ import com.sya.utils.IdUtils;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class ControlProcess implements Serializable {
 
-    public static DataStream<DatapointAlarmPushMessageDto> exec(DataStream<DataPointDto> alramStream) {
+    public static DataStream<ControlDto> execForAlarm(DataStream<DataPointDto> alramStream) {
         // 由报警触发的控制流
         SingleOutputStreamOperator<DataPointDto> filter = alramStream.filter(action -> {
             return "2".equals(action.getRuleBaseDto().getTriggerType());
@@ -50,18 +51,22 @@ public class ControlProcess implements Serializable {
 
             }
         });
-
-
-
-
-        return null;
+        DataStream<ControlDto> process = dataPointDtoSingleOutputStreamOperator.process(new ControlProcessFunction());
+        return process;
     }
+
+    public static DataStream<ControlDto> exec(DataStream<DataPointDto> controlStream) {
+        // 控制规则亚平
+        DataStream<ControlDto> process = controlStream.process(new ControlProcessFunction());
+        return process;
+    }
+
+    /***
+     * 报警触发的控制
+     */
     static class ControlProcessFunction extends ProcessFunction<DataPointDto, ControlDto> {
-        private static final   Properties properties = PropertiesUnit.getProperties("aplication.properties");
         @Override
         public void processElement(DataPointDto value, Context ctx, Collector<ControlDto> out) throws Exception {
-            String selector = properties.getProperty("rule.action.obj");
-
             RuleBaseDto ruleBaseDto = value.getRuleBaseDto();
             RuleAction ruleAction = ruleBaseDto.getRuleAction();
             String action = ruleAction.getAction();
@@ -120,7 +125,7 @@ public class ControlProcess implements Serializable {
                     dto.setControlSn(value.getSn());
                     dto.setUniqueDataPointId(controlActionDto.getControlUniqueDataPointId());
                     // 需要在 报警规则中获取
-                    dto.setControlMachineId(ruleMonitorElement.getMachineId());
+                    dto.addControlMachineId(ruleMonitorElement.getMachineId());
                     out.collect(dto);
                 }
             }else if ("2".equals(elementType)) {
@@ -131,10 +136,16 @@ public class ControlProcess implements Serializable {
                             controlActionDto.getControlType(),trigger);
                     dto.setControlSn(value.getSn());
                     // 定位 数采设备
-                    dto.setControlMachineId(null);
+                    String machineIds = DeviceCacheUtil.getDeviceMachineMapper(value.getSn());
+                    if (!CommonUtil.judgeEmpty(machineIds)) {
+                        String[] split = machineIds.split(",");
+                        List<Integer> collect = Arrays.stream(split).map(a->{return  Integer.parseInt(a);}).collect(Collectors.toList());
+                        dto.setControlMachineIds(collect);
+                    }
                     // 根据 sn +datapointid 定位 UniqueDataPointId
                     Integer controlDataPointId = controlActionDto.getControlDataPointId();
-                    dto.setUniqueDataPointId();
+                    String devicePointRel = DeviceCacheUtil.getDevicePointRel(value.getSn(), controlDataPointId.toString());
+                    dto.setUniqueDataPointId(Integer.parseInt(devicePointRel));
                     out.collect(dto);
                 }
 
@@ -143,4 +154,5 @@ public class ControlProcess implements Serializable {
 
         }
     }
+
 }

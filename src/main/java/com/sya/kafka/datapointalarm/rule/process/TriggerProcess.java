@@ -58,14 +58,12 @@ public class TriggerProcess implements Serializable {
             RuleBaseDto rule = value.getRuleBaseDto();
             RuleAction ruleAction = rule.getRuleAction();
             String actionType = ruleAction.getActionType();
-
             // 控制流
             if ("2".equals(actionType)) {
                 // 不是由报警产生的
                 if (!"2".equals(rule.getTriggerType())){
                     ctx.output(controlTag,value);
                 }
-
                 return;
             }
             // 报警流
@@ -74,7 +72,7 @@ public class TriggerProcess implements Serializable {
                 {
                     // 获取 延期时间
                     Integer delayTime = trigger.getDelayTime()*1000;
-                    if (triggerStatus(value,trigger)) {
+                    if (TriggerStatus.triggerStatus(value,trigger)) {
                         if (!delayTime.equals("0")) {
                             /***
                              * 说明存在延期;也就是需要定时器
@@ -246,73 +244,6 @@ public class TriggerProcess implements Serializable {
         public void initializeState(FunctionInitializationContext context) throws Exception {
         }
 
-        public boolean triggerStatus(DataPointDto value,RuleTriggerDto triggerDto){
-            if (triggerDto == null) {
-                return false;
-            }
-            String triggerCondition = triggerDto.getTriggerCondition();
-            String val = value.getVal().trim();
-            if ("0".equals(triggerCondition)) {
-                // 开启
-               if ("1".equals(val)) {
-                   return true;
-               }
-            }
-            if ("1".equals(triggerCondition)) {
-                // 开关OFF
-                if ("0".equals(val)) {
-                    return true;
-                }
-            }
-
-            if ("2".equals(triggerCondition)) {
-                // 数值等于A
-                Integer triggerConditionValType = triggerDto.getTriggerConditionValType();
-                if (triggerConditionValType.intValue() == 0) {
-                    // 数值类型
-                    Double num = CommonUtil.str2Double(val);
-                    if (num.doubleValue() == triggerConditionValType) {
-                        return true;
-                    }
-                }else if (triggerConditionValType.intValue() == 1) {
-                    // 字符串
-                    if (val.equals(triggerDto.getTriggerConditionAval().trim())) {
-                        return true;
-                    }
-                }
-
-            }
-            if ("3".equals(triggerCondition)) {
-                // 3 数值大于A 只考虑数值类型
-                Integer triggerConditionValType = triggerDto.getTriggerConditionValType();
-                if (triggerConditionValType.intValue() == 0) {
-                    // 数值类型
-                    Double alarmDeadZone = CommonUtil.str2Double(triggerDto.getAlarmDeadZone());
-                    Double num = CommonUtil.str2Double(val);
-                    double triggerConditionAval = CommonUtil.str2Double(triggerDto.getTriggerConditionAval().trim()).doubleValue();
-                    if (num.doubleValue() > (triggerConditionAval+alarmDeadZone)) {
-                        return true;
-                    }
-                }
-
-            }
-            if ("4".equals(triggerCondition)) {
-                // 数值小于B
-                Integer triggerConditionValType = triggerDto.getTriggerConditionValType();
-                if (triggerConditionValType.intValue() == 0) {
-                    // 数值类型
-                    Double alarmDeadZone = CommonUtil.str2Double(triggerDto.getAlarmDeadZone());
-                    Double num = CommonUtil.str2Double(val);
-                    double triggerConditionBval = CommonUtil.str2Double(triggerDto.getTriggerConditionBval().trim()).doubleValue();
-                    if (num.doubleValue() > triggerConditionBval - alarmDeadZone) {
-                        return true;
-                    }
-                }
-
-            }
-
-            return false;
-        }
 
 
     }

@@ -1,5 +1,4 @@
 package com.sya.mapper;
-import com.sya.dto.MachineDeviceRel;
 import com.sya.dto.RuleMonitorElement;
 import org.apache.ibatis.annotations.Param;
 

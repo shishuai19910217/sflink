@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.sya.mapper.MachineDeviceRelMapper">
-    <select id="getList"  resultType="com.sya.dto.MachineDeviceRel">
-        select id from machine_device_rel where id=#{id}
+    <select id="getList"  resultType="com.sya.kafka.datapointalarm.rule.dto.MachineDeviceRelDto">
+        select device_sn as deviceSn,machine_id as machineId from machine_device_rel
+        where device_sn in
+        <foreach collection="sns" item="sn" open="(" close=")" separator="," >
+            #{sn}
+        </foreach>
     </select>
 </mapper>

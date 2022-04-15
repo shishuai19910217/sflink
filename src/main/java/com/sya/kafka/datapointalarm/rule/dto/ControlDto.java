@@ -1,8 +1,12 @@
 package com.sya.kafka.datapointalarm.rule.dto;
 
+import com.sya.utils.CommonUtil;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 public class ControlDto implements Serializable {
     /***
@@ -18,7 +22,7 @@ public class ControlDto implements Serializable {
     /***
      * 控制设备
      */
-    private Integer controlMachineId;
+    private List<Integer> controlMachineIds;
 
     /***
      * 控制网关
@@ -56,5 +60,12 @@ public class ControlDto implements Serializable {
         this.controlData = controlData;
         this.controlType = controlType;
         this.trigger = trigger;
+    }
+
+    public void addControlMachineId(Integer controlmachineId){
+        if (CommonUtil.judgeEmpty(this.controlMachineIds)) {
+            this.controlMachineIds = new ArrayList<>();
+        }
+        this.controlMachineIds.add(controlmachineId);
     }
 }

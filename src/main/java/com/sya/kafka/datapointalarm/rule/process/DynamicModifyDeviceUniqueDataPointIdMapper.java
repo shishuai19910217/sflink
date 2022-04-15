@@ -33,12 +33,12 @@ public class DynamicModifyDeviceUniqueDataPointIdMapper implements Serializable 
 
     /***
      * 触发时机
-     * 删除网关
-     * 删除模板
-     * 删除从机
-     * 删除变量
-     * 添加变量
-     * 修改网关-模板变更
+     * 删除网关  --删除缓存就行
+     * 删除模板  --删除缓存就行
+     * 删除从机  --覆盖或者删除
+     * 删除变量  --覆盖或者删除
+     * 添加变量  --覆盖
+     * 修改网关-模板变更  --覆盖
      * @param env
      */
     public static void exec(StreamExecutionEnvironment env) {
@@ -49,25 +49,30 @@ public class DynamicModifyDeviceUniqueDataPointIdMapper implements Serializable 
             for (int i = 0; i < sns.size(); i++) {
                 String sn = sns.get(i).toString();
                 snList.add(sn);
-
             }
-            Map<String, String> snMap = snList.stream().collect(Collectors.toMap(key -> {
-                return key;
-            }, val -> {
-                return val;
-            }));
 
             List<DevicePointRelDto> devicePointRelsBySnForDB = DeviceCacheUtil.getDevicePointRelsBySnForDB(snList);
+
             if (CommonUtil.judgeEmpty(devicePointRelsBySnForDB)) {
                // 就删除所有相关缓存sns
                 DeviceCacheUtil.delDevicePointRel(snList);
             }else {
-                // 重新覆盖缓存
+
+                // 数据库存在的需要重新覆盖缓存
                 Map<String, List<DevicePointRelDto>> mapForDb = devicePointRelsBySnForDB.stream().collect(Collectors.groupingBy(key -> {
                     return key.getSn();
                 }));
                 DeviceCacheUtil.setDevicePointRel(mapForDb);
-
+                // 数据库不存在的删除
+                List<String> delCacheList = new ArrayList<>();
+                for (String s : snList) {
+                    if (!mapForDb.containsKey(s)) {
+                        delCacheList.add(s);
+                    }
+                }
+                if (CommonUtil.judgeEmpty(delCacheList)) {
+                    DeviceCacheUtil.delDevicePointRel(delCacheList);
+                }
 
             }
 

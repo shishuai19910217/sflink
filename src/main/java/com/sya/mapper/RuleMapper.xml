@@ -38,4 +38,10 @@
         </foreach>
 
     </select>
+    <select id="getByRelyRuleIds" resultType="com.sya.dto.RelyRuleAssociateMapperDto">
+        SELECT id as controlId,rely_rule_id as alarmId from rule where rely_rule_id in
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+    </select>
 </mapper>

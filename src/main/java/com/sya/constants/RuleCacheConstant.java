@@ -14,10 +14,16 @@ public final class RuleCacheConstant {
     public static final String RULE_UNIQUEDATAPOINT_CACHE_PREFIX = "ruleuniqueDataPoint-";
 
     /***
-     * uniqueDataPointId对应的规则id映射缓存
+     * DataPointId对应的规则id映射缓存
      *
      */
     public static final String RULE_DATAPOINT_CACHE_PREFIX = "ruleDataPoint-";
+
+    /***
+     * operaDataPointId对应的规则id映射缓存
+     *
+     */
+    public static final String RULE_OPERADATAPOINT_CACHE_PREFIX = "ruleoperaDataPoint-";
     /***
      * 缓存数据点最新的报警信息 方便
      */
@@ -37,4 +43,14 @@ public final class RuleCacheConstant {
      * 网关与UniqueDataPointId的映射
      */
     public static final String DEVICE_DATAPOINT_PREFIX = "devicedatapoint-";
+
+    /***
+     * 网关与machine的映射
+     */
+    public static final String DEVICE_MACHINE_PREFIX = "devicemachine-";
+
+    /***
+     * 报警规则下相关链的控制规则
+     */
+    public static final String ALARMCONTROL_PREFIX = "alarmcontrol-";
 }

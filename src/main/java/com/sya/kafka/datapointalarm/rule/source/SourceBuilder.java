@@ -54,7 +54,7 @@ public class SourceBuilder {
 
     }
     /***
-     * 规则动态修改
+     *  网关与数据点的映射关系动态修改
      * @return
      */
     public static FlinkKafkaConsumer getKafkaDeviceUniqueDataPointIdMapperModifySource(){
@@ -63,6 +63,34 @@ public class SourceBuilder {
         properties.setProperty("group.id", kafkaProperties.getProperty("deviceUniqueDataPointId.modify.group.id"));
         FlinkKafkaConsumer<JSONObject> source =
                 new FlinkKafkaConsumer<JSONObject>(kafkaProperties.getProperty("deviceUniqueDataPointId.modify.topic"),new FastjsonKeyValueDeserializationSchema(),properties);
+        return source;
+
+    }
+
+    /***
+     *  网关与数据点的映射关系动态修改
+     * @return
+     */
+    public static FlinkKafkaConsumer getKafkaDeviceMachineMapperModifySource(){
+        Properties properties = new Properties();
+        properties.setProperty("bootstrap.servers", kafkaProperties.getProperty("bootstrap.servers"));
+        properties.setProperty("group.id", kafkaProperties.getProperty("deviceMachine.modify.group.id"));
+        FlinkKafkaConsumer<JSONObject> source =
+                new FlinkKafkaConsumer<JSONObject>(kafkaProperties.getProperty("deviceMachine.modify.topic"),new FastjsonKeyValueDeserializationSchema(),properties);
+        return source;
+
+    }
+
+    /***
+     *  报警规则与控制规则的关联映射
+     * @return
+     */
+    public static FlinkKafkaConsumer getKafkaAlarmToControlMapperModifySource(){
+        Properties properties = new Properties();
+        properties.setProperty("bootstrap.servers", kafkaProperties.getProperty("bootstrap.servers"));
+        properties.setProperty("group.id", kafkaProperties.getProperty("alarmToControl.modify.group.id"));
+        FlinkKafkaConsumer<JSONObject> source =
+                new FlinkKafkaConsumer<JSONObject>(kafkaProperties.getProperty("alarmToControl.modify.topic"),new FastjsonKeyValueDeserializationSchema(),properties);
         return source;
 
     }

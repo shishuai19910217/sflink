@@ -1,6 +1,5 @@
 package com.sya.cache;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.sya.config.MybatisConfig;
 import com.sya.constants.RuleCacheConstant;
@@ -10,10 +9,7 @@ import com.sya.mapper.RuleMonitorElementMapper;
 import com.sya.utils.CommonUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /****
@@ -22,11 +18,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RuleCacheUtil {
 
-    public static List<RuleMonitorElement> getRuleMonitorElementForDB(List<Integer> uniqueDataPointIds){
-        RuleMonitorElementMapper mapper = MybatisConfig.getMapper(RuleMonitorElementMapper.class);
-        List<RuleMonitorElement> list = mapper.getList(uniqueDataPointIds);
-        return list;
-    }
     public static List<RuleMonitorElement> getRuleMonitorElementForDB(Integer uniqueDataPointId){
         RuleMonitorElementMapper mapper = MybatisConfig.getMapper(RuleMonitorElementMapper.class);
         List<Integer> ids = new ArrayList<>();
@@ -35,9 +26,6 @@ public class RuleCacheUtil {
         return list;
     }
 
-    public static List<RuleBaseCacheDto> getBaseRuleForDB(List<Integer> ruleIds) {
-        return null;
-    }
 
     /***
      * 更新 关系数据点与规则的映射关系
@@ -45,7 +33,7 @@ public class RuleCacheUtil {
      * @param ruleIdStr
      */
     public static void setUniqueDataPointRuleMapper(String key, String ruleIdStr) {
-        CacheUtil.set(key,ruleIdStr);
+        CacheUtil.set(RuleCacheConstant.RULE_UNIQUEDATAPOINT_CACHE_PREFIX+key,ruleIdStr);
     }
 
     /***
@@ -105,7 +93,7 @@ public class RuleCacheUtil {
             return;
         }
         Map<String, Object> collect = ruleBaseDataForDB.stream().collect(Collectors.toMap(key -> {
-            return key.getId().toString();
+            return RuleCacheConstant.RULE_BASE_CACHE_PREFIX+key.getId().toString();
         }, val -> {
             return val;
         }));
@@ -114,7 +102,7 @@ public class RuleCacheUtil {
 
 
     public static RuleBaseDto getRuleBaseData(String ruleId){
-        String str = CacheUtil.getStr(ruleId);
+        String str = CacheUtil.getStr(RuleCacheConstant.RULE_BASE_CACHE_PREFIX+ruleId);
         return JSONObject.parseObject(str,RuleBaseDto.class);
     }
 
@@ -134,5 +122,94 @@ public class RuleCacheUtil {
             ruleIds.add(Integer.parseInt(s));
         }
         return ruleIds;
+    }
+
+    public static void delUniqueDataPointRuleMapper(String uniqueDataPointId) {
+        String str = CacheUtil.getStr(RuleCacheConstant.RULE_UNIQUEDATAPOINT_CACHE_PREFIX + uniqueDataPointId);
+        if (CommonUtil.judgeEmpty(str)) {
+            return;
+        }
+        List<String> ruleIds = Arrays.stream(str.split(",")).collect(Collectors.toList());
+        List<String> collect = ruleIds.stream().map(action -> {
+            return RuleCacheConstant.RULE_BASE_CACHE_PREFIX + action;
+        }).collect(Collectors.toList());
+        //删除基本信息
+        CacheUtil.del(collect);
+        // 删除映射信息
+        CacheUtil.del(RuleCacheConstant.RULE_UNIQUEDATAPOINT_CACHE_PREFIX+uniqueDataPointId);
+    }
+
+    public static List<RelyRuleAssociateMapperDto> getRuleBaseDataByRelyRuleIdForDB(List<Integer> relyRuleIds) {
+        RuleMapper mapper = MybatisConfig.getMapper(RuleMapper.class);
+        List<RelyRuleAssociateMapperDto> list = mapper.getByRelyRuleIds(relyRuleIds);
+        return list;
+    }
+
+    public static List<String> getUniqueDataPointRuleMapper(String uniqueDataPointId) {
+        String str = CacheUtil.getStr(RuleCacheConstant.RULE_UNIQUEDATAPOINT_CACHE_PREFIX + uniqueDataPointId);
+        if (CommonUtil.judgeEmpty(str)) {
+            return null;
+        }
+        List<String> collect = Arrays.stream(str.split(",")).collect(Collectors.toList());
+        return collect;
+    }
+
+    public static void delDataPointRuleMapper(String dataPointId) {
+        CacheUtil.del(RuleCacheConstant.RULE_DATAPOINT_CACHE_PREFIX+dataPointId);
+    }
+
+    public static List<String> getDataPointRuleMapper(String dataPointId) {
+        String str = CacheUtil.getStr(RuleCacheConstant.RULE_DATAPOINT_CACHE_PREFIX + dataPointId);
+        if (CommonUtil.judgeEmpty(str)) {
+            return null;
+        }
+        List<String> collect = Arrays.stream(str.split(",")).collect(Collectors.toList());
+        return collect;
+    }
+
+    public static void delOperaDataPointRuleMapper(String operaDataPointId) {
+        CacheUtil.del(RuleCacheConstant.RULE_OPERADATAPOINT_CACHE_PREFIX+operaDataPointId);
+    }
+
+    public static List<String> getOperaDataPointRuleMapper(String operaDataPointId) {
+
+        String str = CacheUtil.getStr(RuleCacheConstant.RULE_OPERADATAPOINT_CACHE_PREFIX + operaDataPointId);
+        if (CommonUtil.judgeEmpty(str)) {
+            return null;
+        }
+        List<String> collect = Arrays.stream(str.split(",")).collect(Collectors.toList());
+        return collect;
+    }
+
+    public static void setDataPointRuleMapper(String dataPoint, String ruleIdStr) {
+        CacheUtil.set(RuleCacheConstant.RULE_DATAPOINT_CACHE_PREFIX+dataPoint,ruleIdStr);
+    }
+
+    public static void setOperaDataPointRuleMapper(String dataPoint, String ruleIdStr) {
+        CacheUtil.set(RuleCacheConstant.RULE_OPERADATAPOINT_CACHE_PREFIX+dataPoint,ruleIdStr);
+    }
+
+    public static void delAlarmControlMapper(List<Integer> delList) {
+        List<String> collect = delList.stream().map(val -> {
+            return RuleCacheConstant.ALARMCONTROL_PREFIX + val.toString();
+        }).collect(Collectors.toList());
+        CacheUtil.del(collect);
+    }
+
+    public static void setAlarmControlMapper(Map<String, List<RelyRuleAssociateMapperDto>> map) {
+        if (CommonUtil.judgeEmpty(map)) {
+            return;
+        }
+        Set<String> alarmIds = map.keySet();
+        Map<String,Object> tmp = new HashMap<>(16);
+        for (String alarmId : alarmIds) {
+            List<RelyRuleAssociateMapperDto> relyRuleAssociateMapperDtos = map.get(alarmId);
+            List<String> collect = relyRuleAssociateMapperDtos.stream().map(val -> {
+                return val.getControlId().toString();
+            }).collect(Collectors.toList());
+            tmp.put(alarmId, String.join(",",collect));
+
+        }
+        CacheUtil.set(tmp);
     }
 }

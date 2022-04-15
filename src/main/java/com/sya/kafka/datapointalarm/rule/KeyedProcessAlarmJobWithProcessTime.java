@@ -9,11 +9,8 @@ import com.sya.dto.RuleBaseDto;
 import com.sya.dto.SnAlaram;
 import com.sya.kafka.datapointalarm.AlarmRuleDto;
 import com.sya.kafka.datapointalarm.rule.dto.*;
-import com.sya.kafka.datapointalarm.rule.process.DynamicModifyRule;
+import com.sya.kafka.datapointalarm.rule.process.*;
 import com.sya.kafka.datapointalarm.rule.conversion.KafkaDataFlatMapper;
-import com.sya.kafka.datapointalarm.rule.process.PushProcess;
-import com.sya.kafka.datapointalarm.rule.process.RuleTag;
-import com.sya.kafka.datapointalarm.rule.process.TriggerProcess;
 import com.sya.kafka.datapointalarm.rule.source.SourceBuilder;
 import com.sya.utils.CommonUtil;
 import com.sya.utils.IdUtils;
@@ -50,7 +47,6 @@ public class KeyedProcessAlarmJobWithProcessTime {
             = new MapStateDescriptor<>("state", String.class, String.class);
 
     public static void main(String[] args) throws Exception {
-
         // 获取 flink 执行环境
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         //env.setParallelism(1);
@@ -61,7 +57,6 @@ public class KeyedProcessAlarmJobWithProcessTime {
         DataStream<DataPointDto> dynamicModifyRule = DynamicModifyRule.exec(kafkaPointData, env);
         // 规则打标，压平 只产出含有规则id的数据
         DataStream<DataPointDto> ruleTag = RuleTag.exec(dynamicModifyRule);
-
         // 按 数据点以及规则id 分区
         KeyedStream<DataPointDto, String> keyedStream = ruleTag.keyBy(new KeySelector<DataPointDto, String>() {
             @Override
@@ -71,16 +66,17 @@ public class KeyedProcessAlarmJobWithProcessTime {
             }
         });
         // 加载报警规则  产生【动作流】
-        SingleOutputStreamOperator<DataPointDto> process1 = keyedStream.process(new SingleOutKeyedProcessFunction());
         SingleOutputStreamOperator<DataPointDto> triggerProcess = TriggerProcess.exec(keyedStream, env);
-
         // 【报警流-恢复流】   1 1 1 0 1 1 1
         DataStream<DataPointDto> alramStream = triggerProcess.getSideOutput(TriggerProcess.SingleOutKeyedProcessFunction.alramTag);
+        // 依赖报警的控制处理
+        DataStream<ControlDto> controlDtoDataStreamForAlarm = ControlProcess.execForAlarm(alramStream);
         // 【控制流】
         DataStream<DataPointDto> controlStream = triggerProcess.getSideOutput(TriggerProcess.SingleOutKeyedProcessFunction.controlTag);
-
+        DataStream<ControlDto> controlDtoDataStream = ControlProcess.exec(controlStream);
         alramStream.print(); // 其实是报警信息入库
-
+        // 控制入库
+        controlDtoDataStreamForAlarm.print();
         // 定义【时钟流】推动flink 向下处理   并流合并 TODO 暂时不需要
         // 处理推送流
         KeyedStream<DataPointDto, String> pushKeyByStream = alramStream.keyBy(new KeySelector<DataPointDto, String>() {
@@ -92,12 +88,6 @@ public class KeyedProcessAlarmJobWithProcessTime {
         DataStream<DatapointAlarmPushMessageDto> pushProcess = PushProcess.exec(pushKeyByStream, env);
         // 推送信息入库
         pushProcess.print();
-
-
-
-
-
-
         env.execute();
     }
 
@@ -123,70 +113,6 @@ public class KeyedProcessAlarmJobWithProcessTime {
      * 报警频率 网关离线超过 N分钟
      *
      */
-    static class MyAlarmKeyedProcessFunction extends KeyedProcessFunction<String, SnAlaram, SnAlaram> {
-        public MyAlarmKeyedProcessFunction() {
-            super();
-        }
-
-        @Override
-        public void onTimer(long timestamp, OnTimerContext ctx, Collector<SnAlaram> out) throws Exception {
-            // 其实就是数据入库
-            String currentKey = ctx.getCurrentKey();
-            System.out.println(currentKey+"---报警了---"+ctx.timerService().currentProcessingTime());
-            long timeInterval = 0L;
-            if (currentKey.equals("a")) {
-                timeInterval = 1000L;
-            }else {
-                timeInterval = 5000L;
-            }
-            ValueState<Long> sn_timerTs = getRuntimeContext().getState(new ValueStateDescriptor<Long>(currentKey+"_alramTimerTs", Long.class));
-            // 再设置 下次报警时间
-            Long value = sn_timerTs.value();
-            ctx.timerService().registerProcessingTimeTimer(value+timeInterval);
-            sn_timerTs.update(value+timeInterval);
-
-        }
-
-        @Override
-        public void processElement(SnAlaram value, Context ctx, Collector<SnAlaram> out) throws Exception {
-            String sn = value.getSn();
-            String status = value.getStatus();
-            long timeInterval = 0L;
-
-            if (sn.equals("a")) {
-                timeInterval = 1000L;
-            }else {
-                timeInterval = 5000L;
-            }
-            /***
-             * 起一个
-             */
-            // 定时任务
-            ValueState<Long> sn_timerTs = getRuntimeContext().getState(new ValueStateDescriptor<Long>(sn+"_alramTimerTs", Long.class));
-            Long sn_timerTsVal = sn_timerTs.value();
-            // 报警中
-            if ("0".equals(status)) {
-                if (null == sn_timerTsVal) {
-                    // 计算出 定时任务的时间戳
-                    long ts = ctx.timerService().currentProcessingTime();
-                    ts = ts + timeInterval; // 五秒
-                    ctx.timerService().registerProcessingTimeTimer(ts);
-                    System.out.println("----所属的时间窗是---"+ts);
-                    sn_timerTs.update(ts);
-                }else {
-                    System.out.println("----所属的时间窗是---"+sn_timerTsVal);
-                }
-            }else {
-                // 删除 相关定时任务
-                // 计算出 定时任务的时间戳
-                if (null != sn_timerTsVal) {
-                    ctx.timerService().deleteProcessingTimeTimer(sn_timerTsVal);
-                    sn_timerTs.clear();
-                }
-
-            }
-        }
-    }
 
 
     static class SingleOutKeyedProcessFunction  extends KeyedProcessFunction<String, DataPointDto, DataPointDto>  implements CheckpointedFunction{
